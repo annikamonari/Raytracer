@@ -74,7 +74,7 @@ class SphericalRefraction:
 			return "concave"
 		elif self.__c > 0:
 			return "convex"
-		else:
+		elif self.__c == 0:
 			return "plane"
 
 	def centre(self):
@@ -82,7 +82,7 @@ class SphericalRefraction:
 			return np.array(0, 0, self.__z0 + self.__r)
 		elif self.__s == "concave":
 			return np.array(0, 0, self.__z0 - self.__r)
-		else:
+		elif self.__s == "plane":
 			return "plane surfaces have no centre"
 
 	def intercept(self, ray):
@@ -101,7 +101,7 @@ class SphericalRefraction:
 			return ray.p() + min(l1, l2)*ray.kunit()
 		elif self.__s == "concave":
 			return ray.p() + max(l1, l2)*ray.kunit()
-		else:
+		elif self.__s == "plane":
 			return ray.p() + lplane*ray.kunit()
 
 
