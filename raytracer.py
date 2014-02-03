@@ -11,37 +11,33 @@ optical ray tracer
 class Ray:
 
 	def __init__(self, p = [0.0, 0.0, 0.0], k = [0.0, 0.0, 0.0]):
-		self.__points = [np.array(p)]
-		self.__directions = [np.array(k)]
+		self.points = [np.array(p)]
+		self.directions = [np.array(k)/np.sqrt(sum(n**2 for n in k))]
 		self.checklength()
 	
 	def checklength(self):
-		if any(len(i) != 3 for i in self.__points + self.__directions):
+		if any(len(i) != 3 for i in self.points + self.directions):
 			raise Exception("Ray point or direction parameter size")
 
 	def points(self):
-		return self.__points
+		return self.points
 
 	def directions(self):
-		return self.__directions
+		return self.directions
 
 	def p(self):
-		return self.__points[len(self.__points)-1]
+		return self.points[len(self.points)-1]
 
 	def k(self):
-		return self.__directions[len(self.__directions)-1]
+		return self.directions[len(self.directions)-1]
 
-	def kunit(self):
-		return self.k()/sum(self.k())
-
-
-	def append(self, p, k):
-		self.__points.append(np.array(p))
-		self.__directions.append(np.array(k))
+	def append(self, p = [0.0, 0.0, 0.0], k = [0.0, 0.0, 0.0]):
+		self.points.append(np.array(p))
+		self.directions.append(np.array(k))
 		self.checklength()
 
 	def vertices(self):
-		for item in self.__points: print item
+		for item in self.points: print item
 
 class OpticalElement:
   	def propagate(self, ray):
@@ -88,33 +84,52 @@ class SphericalRefraction:
 	def intercept(self, ray):
 		r = ray.p() - self.centre
 		r_mag = np.sqrt(sum(n**2 for n in r))
-		rdotkunit = np.dot(r, ray.kunit())
-		l1 = -rdotkunit + np.sqrt(rdotkunit**2 - r_mag**2 + self.r**2)
-		l2 = -rdotkunit - np.sqrt(rdotkunit**2 - r_mag**2 + self.r**2)
-		lplane = (self.z0 - ray.p()[2]) / ray.kunit()[2]
+		rdotk = np.dot(r, ray.k())
+		l1 = -rdotk + np.sqrt(rdotk**2 - r_mag**2 + self.r**2)
+		l2 = -rdotk - np.sqrt(rdotk**2 - r_mag**2 + self.r**2)
+		lplane = (self.z0 - ray.p()[2]) / ray.k()[2]
 
-		if (rdotkunit**2 - r_mag**2 + self.r**2) < 0:
-			return None
-		elif (rdotkunit**2 - r_mag**2 + self.r**2) == 0:
-			return ray.p() + -rdotkunit*ray.kunit()
+		if (rdotk**2 - r_mag**2 + self.r**2) < 0:
+			return "No valid intercept"
+		elif (rdotk**2 - r_mag**2 + self.r**2) == 0:
+			return ray.p() + -rdotk*ray.k()
 		elif self.s == "convex": 
-			return ray.p() + min(l1, l2)*ray.kunit()
+			return ray.p() + min(l1, l2)*ray.k()
 		elif self.s == "concave":
-			return ray.p() + max(l1, l2)*ray.kunit()
+			return ray.p() + max(l1, l2)*ray.k()
 		elif self.s == "plane":
-			return ray.p() + lplane*ray.kunit()
+			return ray.p() + lplane*ray.k()
 
 	def unitsurfacenormal(self, ray):
 		Q = self.intercept(ray)
 		surface_normal = Q - self.centre()
 		return surface_normal/np.sqrt(sum(n**2 for n in surface_normal))
 
-	def refract(self, ray):
-		unit_n = self.unitsurfacenormal(ray)
-		unit_k = ray.kunit()
-		theta_1 = np.arccos(np.dot(unit_k, unit_n))
-		theta_2 = np.arcsin((self.n1*np.sin(theta_1)/self.n2))
-		
+	def refract(self, ray, n = [0.0, 0.0, 0.0]):
+		if n is None:
+			n_unit = self.unitsurfacenormal(ray)
+		else: 
+			n_unit = n/np.sqrt(sum(i**2 for i in np.array(n)))
+			# in case the person doesn't input n as a unit vector
+		k1 = ray.k() 
+		index = self.n1/self.n2
+		ndotk1 = np.dot(n_unit, k1)
+		if 1/index <= np.sin(np.arccos(ndotk1):
+			return index*k1 - (index*ndotk1 - np.sqrt(1- index**2(1-ndotk1**2)))*n_unit
+		else:
+			return "None"
+
+	def propagate_ray(self, ray):
+		k2 = self.refract(ray)
+		p = self.intercept(ray) + k2
+		ray.append(p, k)
+		if self.intercept(ray) == "No valid intercept" or self.refract(ray) == "None":
+			return "Terminated"
+		else:
+			return "Final Point: " + ray.p().to_s + "and" + "Direction: " + ray.k().to_s
+
+	
+
 
 
 
