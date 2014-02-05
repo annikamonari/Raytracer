@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 """
 
@@ -11,35 +11,47 @@ optical ray tracer
 class Ray:
 
 	def __init__(self, p = [0.0, 0.0, 0.0], k = [0.0, 0.0, 0.0]):
-		self.points = [np.array(p)]
-		self.directions = [np.array(k)/np.sqrt(sum(n**2 for n in k))]
+		self._points = [np.array(p)]
+		self._directions = [np.array(k)/np.sqrt(sum(n**2 for n in k))]
 		self.checklength()
+
+	def __repr__(self):
+		return "[x, y, z] = %s + %st" % (self.p(), self.k())
 	
 	def checklength(self):
-		if any(len(i) != 3 for i in self.points + self.directions):
+		if any(len(i) != 3 for i in self._points + self._directions):
 			raise Exception("Ray point or direction parameter size")
 
 	def points(self):
-		return self.points
+		return self._points
 
 	def directions(self):
-		return self.directions
+		return self._directions
 
 	def p(self):
-		return self.points[len(self.points)-1]
+		return self._points[len(self._points)-1]
 
 	def k(self):
-		return self.directions[len(self.directions)-1]
+		return self._directions[len(self._directions)-1]
 
 	def append(self, p = None , k = None):
 		if p is not None:
-			self.points.append(np.array(p))
+			self._points.append(np.array(p))
 		if k is not None:
-			self.directions.append(np.array(k))		
+			self._directions.append(np.array(k))		
 		self.checklength()
 
 	def vertices(self):
-		for item in self.points: print item
+		for item in self._points: print item
+
+	def plot_spot(self):
+		z, y = [], []
+		for i in self._points:
+			z.append(i[2]), y.append(i[1])
+		print z, y
+		plt.ylim(-160, 60)
+		plt.plot(z, y, color = "Blue")
+		plt.show()
 
 class OpticalElement:
 
@@ -60,7 +72,7 @@ class SphericalRefraction(OpticalElement):
 		self.n1 = n1
 		self.n2 = n2
 		self.ar = ar
-		self.R= self.radius()
+		self.R = self.radius()
 		self.s = self.surface()
 		self.centre = self.centre()
 		
@@ -139,12 +151,12 @@ class SphericalRefraction(OpticalElement):
 	def refract(self, ray):
 		n_unit = self.unitsurfacenormal(ray)
 		k1 = ray.k() 
-		index = self.n1/self.n2
+		ref = self.n1/self.n2
 		ndotk1 = np.dot(n_unit, k1)
-		if 1/index <= np.sin(np.arccos(ndotk1)):
-			return index*k1 - (index*ndotk1 - np.sqrt(1- index**2(1-ndotk1**2)))*n_unit
-		else:
+		if np.sin(np.arccos(ndotk1)) > (1/ref):
 			return None
+		else:	
+			return ref*k1 - (ref*ndotk1 - np.sqrt(1- (ref**2)*(1-ndotk1**2)))*n_unit
 
 	def propagate_ray(self, ray):
 		if self.intercept(ray) is None or self.refract(ray) is None:
@@ -153,22 +165,60 @@ class SphericalRefraction(OpticalElement):
 			k2 = self.refract(ray)
 			p = self.intercept(ray) + k2
 			ray.append(p, k2)
-			return "Final Point: %s" %(ray.p()) + "and Final Direction: %s" %(ray.k())
+			return "Final Point: %s" %(ray.p()) + " and Final Direction: %s" %(ray.k())
 
 class OutputPlane(OpticalElement):
 
-	def __init__(self, z0 = 0.0):
-		self.z0 = z0
+	def __init__(self, z = 0.0):
+		self.z_output = z
 
 	def intercept(self, ray):
-		l = (self.z0 - ray.p()[2]) / ray.k()[2]
-		return ray.p() + lplane*ray.k()
+		l = (self.z_output - ray.p()[2]) / ray.k()[2]
+		return ray.p() + l*ray.k()
 
 	def propagate_ray(self, ray):
 		p = self.intercept(ray)
 		ray.append(p, None)
 		return "Final Point: %s" %(ray.p()) + "and Final Direction: %s" %(ray.k())
 
+class CollimatedBeam:
+
+	def __init__(self, Ray, n = 0, v = 10):
+		self.n = n
+		self.v = v
+		#v = x, y coordinates of ray furthest away from initial ray's origin
+		self.Ray, self.Beam, self.Beam_points = Ray, [], []
+		
+	def create(self):
+		for i in np.linspace(-self.v, self.v, self.n):
+			self.Beam.append(Ray([0, i, 0], self.Ray.k()))
+		return self.Beam
+
+	def trace(self, SphericalRefraction, OutputPlane):
+		self.create()
+		for i in self.Beam:
+			SphericalRefraction.propagate_ray(i)
+			OutputPlane.propagate_ray(i)
+			self.Beam_points.append(i._points)
+		print self.Beam_points
+		self.plot_spot()
+
+	def plot_spot(self):
+		z_coords, y_coords = [], []
+		for list in self.Beam_points:
+			z, y = [], []
+			for i in list:
+				z.append(i[2]), y.append(i[1])
+			z_coords.append(z), y_coords.append(y)
+			print z
+			print y
+		print z_coords
+		print y_coords
+		
+		for i in z_coords:
+			for n in y_coords:
+				plt.plot(i, n, color = "Blue")
+		plt.show()
 
 
 
