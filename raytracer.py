@@ -44,14 +44,17 @@ class Ray:
 	def vertices(self):
 		for item in self._points: print item
 
-	def plot_spot(self):
+	def trace(self, SphericalRefraction, OutputPlane):
+		SphericalRefraction.propagate_ray(self)
+		OutputPlane.propagate_ray(self)
+		self.plot_spot()
+
+	def plot(self):
 		z, y = [], []
 		for i in self._points:
 			z.append(i[2]), y.append(i[1])
 		print z, y
-		plt.ylim(-160, 60)
 		plt.plot(z, y, color = "Blue")
-		plt.show()
 
 class OpticalElement:
 
@@ -183,16 +186,21 @@ class OutputPlane(OpticalElement):
 
 class CollimatedBeam:
 
-	def __init__(self, Ray, n = 0, v = 10):
+	def __init__(self, Ray, r = 10, n = 6):
 		self.n = n
-		self.v = v
-		#v = x, y coordinates of ray furthest away from initial ray's origin
-		self.Ray, self.Beam, self.Beam_points = Ray, [], []
+		self.r = r
+		self.Ray = Ray
+		self.x, self.y = self.Ray.p()[0], self.Ray.p()[1]
+		self.Beam, self.Beam_points = [self.Ray], [self.Ray._points]
 		
 	def create(self):
-		for i in np.linspace(-self.v, self.v, self.n):
-			self.Beam.append(Ray([0, i, 0], self.Ray.k()))
-		return self.Beam
+		for r in np.linspace(0, self.r, self.n, endpoint = True):
+			for i in np.linspace(0, 2*np.pi, (2*np.pi*r*(self.n-1))/self.r, endpoint = True):
+				self.Beam.append(Ray([self.x+r*np.cos(i), self.y + r*np.sin(i), 0], self.Ray.k()))
+		print self.Beam
+
+	def raydensity(self):
+		print len(self.Beam)/(np.pi*(self.r**2))
 
 	def trace(self, SphericalRefraction, OutputPlane):
 		self.create()
@@ -201,26 +209,35 @@ class CollimatedBeam:
 			OutputPlane.propagate_ray(i)
 			self.Beam_points.append(i._points)
 		print self.Beam_points
-		self.plot_spot()
+		self.plot()
+		self.spotplot(0)
 
-	def plot_spot(self):
+	def plot(self):
 		z_coords, y_coords = [], []
 		for list in self.Beam_points:
 			z, y = [], []
 			for i in list:
 				z.append(i[2]), y.append(i[1])
-			z_coords.append(z), y_coords.append(y)
-			print z
-			print y
-		print z_coords
-		print y_coords
-		
+			z_coords.append(z), y_coords.append(y)		
 		for i in z_coords:
 			for n in y_coords:
 				plt.plot(i, n, color = "Blue")
+		plt.title('Beam Path')
+		plt.xlabel('z')
+		plt.ylabel('x')
 		plt.show()
 
-
+	def spotplot(self, z = 0):
+		coords = []
+		for list in self.Beam_points:
+			for i in list:
+				if i[2] == z:
+					coords.append((i[0],i[1]))
+		plt.scatter(*zip(*coords), color = "Red")
+		plt.title('Spot Diagram')
+		plt.xlabel('x')
+		plt.ylabel('y')
+		plt.show()
 
 	
 
