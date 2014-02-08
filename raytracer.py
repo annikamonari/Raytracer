@@ -47,7 +47,14 @@ class Ray:
 	def trace(self, SphericalRefraction, OutputPlane):
 		SphericalRefraction.propagate_ray(self)
 		OutputPlane.propagate_ray(self)
-		self.plot_spot()
+		self.plot()
+
+	def paraxtrace(self, Ray, SphericalRefraction, OutputPlane):
+		SphericalRefraction.propagate_ray(self)
+		SphericalRefraction.propagate_ray(Ray)
+		OutputPlane.propagate_ray(self)
+		OutputPlane.propagate_ray(Ray)
+		self.plotparax(Ray)
 
 	def plot(self):
 		z, y = [], []
@@ -55,6 +62,24 @@ class Ray:
 			z.append(i[2]), y.append(i[1])
 		print z, y
 		plt.plot(z, y, color = "Blue")
+		plt.title('Beam Path')
+		plt.xlabel('z')
+		plt.ylabel('x')
+		plt.show()
+
+	def plotparax(self, Ray):
+		z, y, p, q = [], [], [], []
+		for i in self._points:
+			z.append(i[2]), y.append(i[1])
+		for i in Ray._points:
+			p.append(i[2]), q.append(i[1])
+		print z, y
+		plt.plot(z, y, color = "Blue")
+		plt.plot(p, q, color = "Blue")
+		plt.title('Beam Path')
+		plt.xlabel('z')
+		plt.ylabel('x')
+		plt.show()
 
 class OpticalElement:
 
@@ -192,15 +217,16 @@ class CollimatedBeam:
 		self.Ray = Ray
 		self.x, self.y = self.Ray.p()[0], self.Ray.p()[1]
 		self.Beam, self.Beam_points = [self.Ray], [self.Ray._points]
-		
+		self.d = self.raydensity()
+
 	def create(self):
 		for r in np.linspace(0, self.r, self.n, endpoint = True):
 			for i in np.linspace(0, 2*np.pi, (2*np.pi*r*(self.n-1))/self.r, endpoint = True):
 				self.Beam.append(Ray([self.x+r*np.cos(i), self.y + r*np.sin(i), 0], self.Ray.k()))
-		print self.Beam
+		return self.Beam
 
 	def raydensity(self):
-		print len(self.Beam)/(np.pi*(self.r**2))
+		return len(self.Beam)/(np.pi*(self.r**2))
 
 	def trace(self, SphericalRefraction, OutputPlane):
 		self.create()
@@ -208,9 +234,11 @@ class CollimatedBeam:
 			SphericalRefraction.propagate_ray(i)
 			OutputPlane.propagate_ray(i)
 			self.Beam_points.append(i._points)
-		print self.Beam_points
+		#print self.Beam_points
 		self.plot()
-		self.spotplot(0)
+		#self.spotplot(0)
+		self.spotplot(OutputPlane.z_output)
+		print 'Diffraction Limit = %s' %(((OutputPlane.z_output - SphericalRefraction.z0)*680*10**(-9))/(2*self.r))
 
 	def plot(self):
 		z_coords, y_coords = [], []
@@ -219,25 +247,30 @@ class CollimatedBeam:
 			for i in list:
 				z.append(i[2]), y.append(i[1])
 			z_coords.append(z), y_coords.append(y)		
-		for i in z_coords:
-			for n in y_coords:
-				plt.plot(i, n, color = "Blue")
-		plt.title('Beam Path')
+		for z,y in zip(z_coords, y_coords):
+				plt.plot(z, y, color = "Blue")
+		plt.title('Beam Path for beam of ray density: %s, beam radius: %s' %(self.d, self.r))
+		plt.tight_layout()
 		plt.xlabel('z')
-		plt.ylabel('x')
+		plt.ylabel('y')
 		plt.show()
 
 	def spotplot(self, z = 0):
-		coords = []
+		coords, distances = [], []
 		for list in self.Beam_points:
 			for i in list:
 				if i[2] == z:
 					coords.append((i[0],i[1]))
+		for i in coords:
+			distances.append(np.sqrt(sum(n**2 for n in i)))
+		print 'Rms deviation = %s' %(np.sqrt(sum((n**2 for n in distances))/len(coords)))
 		plt.scatter(*zip(*coords), color = "Red")
-		plt.title('Spot Diagram')
+		plt.title('Spot Diagram at z = %s for beam of ray density: %s, beam radius: %s' %(z, self.d, self.r))
 		plt.xlabel('x')
 		plt.ylabel('y')
 		plt.show()
+
+
 
 	
 
