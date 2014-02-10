@@ -10,7 +10,11 @@ optical ray tracer
 
 class Ray:
 
-	def __init__(self, p = [0.0, 0.0, 0.0], k = [0.0, 0.0, 0.0]):
+	def __init__(self, p = None, k = None):
+		if p == None:
+			p = [0,0,0]
+		if k == None:
+			k = [0,0,0]
 		self._points = [np.array(p)]
 		self._directions = [np.array(k)/np.sqrt(sum(n**2 for n in k))]
 		self.checklength()
@@ -49,12 +53,22 @@ class Ray:
 		OutputPlane.propagate_ray(self)
 		self.plot()
 
-	def paraxtrace(self, Ray, SphericalRefraction, OutputPlane):
+	# a function for estimating the paralaxial focus using two rays
+	def parallaxtrace(self, Ray, SphericalRefraction, OutputPlane):
 		SphericalRefraction.propagate_ray(self)
 		SphericalRefraction.propagate_ray(Ray)
 		OutputPlane.propagate_ray(self)
 		OutputPlane.propagate_ray(Ray)
-		self.plotparax(Ray)
+		self.plotparallax(Ray)
+
+	def parallaxtrace2(self, Ray, sr1, sr2, OutputPlane):
+		sr1.propagate_ray(self)
+		sr1.propagate_ray(Ray)
+		sr2.propagate_ray(self)
+		sr2.propagate_ray(Ray)
+		OutputPlane.propagate_ray(self)
+		OutputPlane.propagate_ray(Ray)
+		self.plotparallax(Ray)
 
 	def plot(self):
 		z, y = [], []
@@ -67,18 +81,19 @@ class Ray:
 		plt.ylabel('x')
 		plt.show()
 
-	def plotparax(self, Ray):
+	def plotparallax(self, Ray):
 		z, y, p, q = [], [], [], []
 		for i in self._points:
 			z.append(i[2]), y.append(i[1])
 		for i in Ray._points:
 			p.append(i[2]), q.append(i[1])
 		print z, y
-		plt.plot(z, y, color = "Blue")
+		print p, q
+		plt.plot(z, y, color = "Red")
 		plt.plot(p, q, color = "Blue")
 		plt.title('Beam Path')
 		plt.xlabel('z')
-		plt.ylabel('x')
+		plt.ylabel('y')
 		plt.show()
 
 class OpticalElement:
@@ -90,7 +105,6 @@ class OpticalElement:
   	def propagate_ray(self, ray):
   		"""propagate a ray through the optical element"""
   		raise NotImplementedError()
-
 
 class SphericalRefraction(OpticalElement):
 
@@ -127,7 +141,7 @@ class SphericalRefraction(OpticalElement):
 		elif self.s == "concave":
 			return np.array([0, 0, self.z0 - self.R])
 		elif self.s == "plane":
-			return None
+			return 0
 
 	def intercept(self, ray):
 		ar_z = np.sqrt(self.R**2 - self.ar**2) 
@@ -166,18 +180,21 @@ class SphericalRefraction(OpticalElement):
 				else:
 					return None
 		elif self.s == "plane":
-			if np.sqrt((ray.p() + lplane*ray.k())[0]**2 + ray.p() + lplane*ray.k()[1]**2) <= self.ar:
+			if np.sqrt((ray.p() + lplane*ray.k())[0]**2 + (ray.p() + lplane*ray.k())[1]**2) <= self.ar:
 				return ray.p() + lplane*ray.k()
 			else:
 				return None
 
 	def unitsurfacenormal(self, ray):
-		Q = self.intercept(ray)
-		surface_normal = Q - self.centre
-		return surface_normal/np.sqrt(sum(n**2 for n in surface_normal))
+		if self.s == "plane":
+			return np.array([0,0,-1])
+		else:
+			Q = self.intercept(ray)
+			surface_normal = Q - self.centre
+			return surface_normal/np.sqrt(sum(n**2 for n in surface_normal))
 
 	def refract(self, ray):
-		n_unit = self.unitsurfacenormal(ray)
+		n_unit = -self.unitsurfacenormal(ray)
 		k1 = ray.k() 
 		ref = self.n1/self.n2
 		ndotk1 = np.dot(n_unit, k1)
@@ -190,10 +207,10 @@ class SphericalRefraction(OpticalElement):
 		if self.intercept(ray) is None or self.refract(ray) is None:
 			return "Terminated"
 		else:
+			p = self.intercept(ray)
 			k2 = self.refract(ray)
-			p = self.intercept(ray) + k2
 			ray.append(p, k2)
-			return "Final Point: %s" %(ray.p()) + " and Final Direction: %s" %(ray.k())
+			print "Final Point: %s" %(ray.p()) + " and Final Direction: %s" %(ray.k())
 
 class OutputPlane(OpticalElement):
 
@@ -219,6 +236,9 @@ class CollimatedBeam:
 		self.Beam, self.Beam_points = [self.Ray], [self.Ray._points]
 		self.d = self.raydensity()
 
+	def __repr__(self):
+		return "Collimated Beam of radius = %s, density = %s, centred at (%s,%s)" % (self.r,self.d,self.x,self.y)
+
 	def create(self):
 		for r in np.linspace(0, self.r, self.n, endpoint = True):
 			for i in np.linspace(0, 2*np.pi, (2*np.pi*r*(self.n-1))/self.r, endpoint = True):
@@ -234,11 +254,20 @@ class CollimatedBeam:
 			SphericalRefraction.propagate_ray(i)
 			OutputPlane.propagate_ray(i)
 			self.Beam_points.append(i._points)
-		#print self.Beam_points
 		self.plot()
-		#self.spotplot(0)
 		self.spotplot(OutputPlane.z_output)
 		print 'Diffraction Limit = %s' %(((OutputPlane.z_output - SphericalRefraction.z0)*680*10**(-9))/(2*self.r))
+
+	def trace2(self, sr1, sr2, OutputPlane):
+		self.create()
+		for i in self.Beam:
+			sr1.propagate_ray(i)
+			sr2.propagate_ray(i)
+			OutputPlane.propagate_ray(i)
+			self.Beam_points.append(i._points)
+		self.plot()
+		self.spotplot(OutputPlane.z_output)
+		print 'Diffraction Limit = %s' %(((OutputPlane.z_output - sr1.z0)*680*10**(-9))/(2*self.r))
 
 	def plot(self):
 		z_coords, y_coords = [], []
@@ -250,7 +279,6 @@ class CollimatedBeam:
 		for z,y in zip(z_coords, y_coords):
 				plt.plot(z, y, color = "Blue")
 		plt.title('Beam Path for beam of ray density: %s, beam radius: %s' %(self.d, self.r))
-		plt.tight_layout()
 		plt.xlabel('z')
 		plt.ylabel('y')
 		plt.show()
