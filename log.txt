@@ -1,0 +1,102 @@
+commit 713f2314cd83a6fe9bc057a6eed441f3bf98a82d
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Thu Feb 13 00:00:39 2014 +0000
+
+    added dispersion class, full optimiser in the test suite, and created rainbows
+
+commit 65566893b912f8ac43efc4989721f8782ac82f03
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Tue Feb 11 16:13:21 2014 +0000
+
+    more doc strings, object input checks, added a sphericalreflection surface class as part of the option, and added a test suite file to test planoconvex lens configurations and lens optimising
+
+commit 493aceba538cd0af4bd90bbb7595bde74dfe9c9a
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Mon Feb 10 15:48:42 2014 +0000
+
+    Added doc strings for less straightforward functions, and all classes, and rechose private vs public attributes
+
+commit 35f6c4db0a91ee109e3c40ccd35a4c6b6fc9d925
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Mon Feb 10 15:08:35 2014 +0000
+
+    made an object checking method outside of all classes and implemented it in all methods. Also made list of points and directions for a ray hidden attributes
+
+commit 29a5dd44e5b61dc2f705fb74ec069fae53b78401
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Mon Feb 10 11:32:35 2014 +0000
+
+    had a bug with using two sphericalrefracting surfaces in a row - couldn't get a proper refraction pattern, a planoconvex lens wouldn't focus the beam and for some reason the second surface seemed to use a new ray instance rather than the one propagated through the first surface. The problem merely relied in my configuration of the normal vectors, as they pointed different directions. Have parallax trace methods in the ray class for tracing/plotting two rays, and the trace2 method for beam to trace it through two sphericalrefracting surfaces with a plot and spot plot in x-y
+
+commit d8cb6a6b28671f6c6f53bce8528a9787273e2772
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Sat Feb 8 20:10:07 2014 +0000
+
+    added paralax functions for two rays under the ray class to estimate paralaxial focus, had some trouble with configuring the graphing (for some reason a blank figure of axes range (0,1) would pop up every time i imported the module to the console. Plot function is fairly inefficient and longwinded for parax because of this
+
+commit 2463f15eec03bf2a273f80c8c1f9bee51615e452
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Fri Feb 7 18:04:33 2014 +0000
+
+    polished up graphing methods, made the beam properly circular and evenly spaced, added method to return ray density of beam
+
+commit 8e48dfde11e50e8d3bc77e6c80417441704dc047
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Wed Feb 5 21:54:18 2014 +0000
+
+    fixed refract method, added collimated beam class and sorted out graphing
+
+commit 37b8b0b68e56b2a4187f2f732f06c78bf70b1bfb
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Tue Feb 4 19:27:04 2014 +0000
+
+    fixed all bugs, added OutputPlane class, changed intercept method to include aperture radius consideration. Also changed append() method in Ray class to make it so either k or p could be added, not necessarily both at once
+
+commit 03cafd86116b5f51f6f27b8f9791a44e9b575fdb
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Mon Feb 3 21:27:41 2014 +0000
+
+    Finished refract and propagate_ray methods
+
+commit 30015f8693a017b18458b0e5a80a1f925e7560fc
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Mon Feb 3 17:49:58 2014 +0000
+
+    added some methods to help implement the refract method later on, and started the refract method; have yet to implement the production of the resulting direction vector in media II
+
+commit cd09d0cc5f93f52fd64a51d98cae39313798ac19
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Tue Jan 28 17:48:31 2014 +0000
+
+    specified some of the elif loops to make sure the programme is looking at the right type of surface
+
+commit 882c6bdf346d2352946c7ffba29ef3f133f16a8d
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Tue Jan 28 17:46:54 2014 +0000
+
+    file changes, errors with the last commit. Git was tracking the wrong version of the raytracer file. This commit has now added the intercept method for all types of spherical surfaces, including plane surfaces.
+
+commit 0339c7a4674dfba301b64399f3d42650b4dbaf6f
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Tue Jan 28 16:36:48 2014 +0000
+
+    finished intercept method for convex and concave surfaces but not plane surfaces. Had to build 'centre' method to calculate the centre of the spherical surface, a 'surface' method that determines what type of surface it is based on its curvature sign, and a 'radius' method to calculate the radius. I also split up the long l calculation into variables such as 'rdotkunit' and 'r_mag' to make the code easier to read
+
+commit 40631b6fd3221877f2dac48286700de2b50b8f91
+Merge: ecb6bcf 7d448bd
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Mon Jan 27 10:22:28 2014 +0000
+
+    finished building the Ray class, had an issue building the intercept method because my maths had an error; the value beneath the square root in calculating l is always negative, perhaps due to an error in translating the spherical coordinates for the optical element's sphere to be centred at the origin
+
+commit ecb6bcfb55cdf0e5fc92574c3fe07da032f82170
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Mon Jan 27 10:06:31 2014 +0000
+
+    finished building the Ray class, had an issue building the intercept method because my maths had an error; the value beneath the square root in calculating l is always negative, perhaps due to an error in translating the spherical coordinates for the optical element's sphere to be centred at the origin
+
+commit 7d448bdddd502828c49dba56e30c48906ae35941
+Author: Annika Monari <annikamonari@gmail.com>
+Date:   Mon Jan 27 02:04:17 2014 -0800
+
+    Initial commit

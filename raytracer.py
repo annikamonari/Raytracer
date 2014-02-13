@@ -118,7 +118,7 @@ class Ray:
 		plt.title('Beam Path')
 		plt.xlabel('z')
 		plt.ylabel('x')
-		plt.show()
+	
 
 	def plotparallax(self, ray):
 		"""plot two rays' paths (x vs. z) in their wavelength corresponding colour"""
@@ -132,6 +132,7 @@ class Ray:
 		plt.title('Beam Path')
 		plt.xlabel('z')
 		plt.ylabel('y')
+		plt.savefig('r1_%s.%s_r2_%s.%s.png' %(self._points[0][0], self._points[0][1], ray._points[0][0], ray._points[0][1]))
 		plt.show()
 
 class OpticalElement:
@@ -199,7 +200,7 @@ class SphericalRefraction(OpticalElement):
 			return ray.p() + -rdotk*ray.k()
 		else:
 			"""Calculates different lengths to intercept and intercepts for each curvature type"""
-			l1, l2 = -rdotk+np.sqrt(rdotk**2-r_mag**2+ self._r**2), -rdotk-np.sqrt(rdotk**2-r_mag**2+self._r**2)
+			l1, l2 = -rdotk+np.sqrt(rdotk**2-r_mag**2+self._r**2), -rdotk-np.sqrt(rdotk**2-r_mag**2+self._r**2)
 			interceptconvex, interceptconcave = ray.p() + min(l1, l2)*ray.k(), ray.p() + max(l1, l2)*ray.k()
 			lplane = (self._z0-ray.p()[2])/ray.k()[2]	
 			interceptplane = ray.p() + lplane*ray.k()			
@@ -229,7 +230,10 @@ class SphericalRefraction(OpticalElement):
 	def refract(self, ray):
 		"""Refracts the ray using snell's law calculating the new direction vector
 		using the ray's direction vector upon intersection"""
-		n_unit = -self.unitsurfacenormal(ray)
+		if self.s == "concave":
+			n_unit = self.unitsurfacenormal(ray)
+		else:
+			n_unit = -self.unitsurfacenormal(ray)
 		k1 = ray.k() 
 		ref = self._n1/self._n2
 		ndotk1 = np.dot(n_unit, k1)
@@ -323,8 +327,7 @@ class DispersiveRefraction(SphericalRefraction):
 			p = self.intercept(ray)
 			k2 = self.refract(ray)
 			ray.append(p, k2)
-			print self.n2(ray)
-			print "Final Point: %s" %(ray.p()) + " and Final Direction: %s" %(ray.k()) 
+			return "Final Point: %s" %(ray.p()) + " and Final Direction: %s" %(ray.k()) 
 
 class SphericalReflection(SphericalRefraction):
 	"""inherits from SphericalRefraction because the intercept method for spheres can be reused"""
@@ -418,7 +421,7 @@ class CollimatedBeam:
 			opticalelement2.propagate_ray(i)
 			outputplane.propagate_ray(i)
 			self._Beampoints.append(i.vertices())
-		self.plot()
+		#self.plotpath()
 		#self.spotplot(outputplane._zoutput)
 	
 	def trace2dispersed(self, opticalelement1, opticalelement2, outputplane):
@@ -434,7 +437,7 @@ class CollimatedBeam:
 		self.plotdispersed()
 		#self.spotplot(outputplane._zoutput)	
 
-	def plot(self):
+	def plotpath(self):
 		"""plot the beam's path (y vs. z)"""
 		z_coords, y_coords = [], []
 		for list in self._Beampoints:
@@ -442,14 +445,15 @@ class CollimatedBeam:
 			for i in list:
 				z.append(i[2]), y.append(i[1])
 			z_coords.append(z), y_coords.append(y)		
+		fig1 = plt.figure()
 		for z,y in zip(z_coords, y_coords):
 			plt.plot(z, y, self._ray.Raycolour())
-		plt.title('Beam Path for beam of %s rays, beam radius: %s' %(self.raynumber(), self._r))
+		plt.title('Beam Path for beam of %s rays, beam radius: %s' %(self._n, self._r))
 		plt.xlabel('z')
 		plt.ylabel('y')
-		plt.xlim(0, 300)
-		#plt.show()
-		plt.savefig('%s_path.png' %(self._r))
+		plt.xlim(0, 250)
+		fig1.show()
+		fig1.savefig('r_%s_and_n_%s_path.png' %(self._r, self._n))
 
 	def plotdispersed(self):
 		"""plot the beam's path (y vs. z), each ray plotted in the colour of its wavelength"""
@@ -462,14 +466,14 @@ class CollimatedBeam:
 			for i in list:
 				z.append(i[2]), y.append(i[1])
 			z_coords.append(z), y_coords.append(y)	
-		print wavelengths
+		fig3 = plt.figure()
 		for z,y in zip(z_coords, y_coords):
 			plt.plot(z, y, wavelengths[z_coords.index(z)])
 		plt.title('Beam Path for beam of %s rays, beam radius: %s' %(self._n, self._r))
 		plt.xlabel('z')
 		plt.ylabel('y')
-		plt.xlim(0, 300)
-		plt.show()
+		plt.xlim(0, 100)
+		fig3.savefig('r_%s_and_n_%s.png' %(self._r, self._n))
 
 	def spotplot(self, z = 0):
 		"""plot the x-y distribution of rays in the beam at various z coordinates 
@@ -478,13 +482,15 @@ class CollimatedBeam:
 		for list in self._Beampoints:
 			for i in list:
 				if i[2] == z:
-					coords.append((i[0],i[1]))
-		plt.scatter(*zip(*coords), color = self._ray.Raycolour())
-		plt.title('Spot Diagram at z = %s for beam of %s rays, beam radius: %s' %(z, self.raynumber(), self._r))
+					coords.append((i[0], i[1]))
+		fig2 = plt.figure()
+		for i in coords:
+			plt.scatter(i[0], i[1], color = "Red")
+		plt.title('Spot Diagram at z = %s for beam of %s rays, beam radius: %s' %(z, self._n, self._r))
 		plt.xlabel('x')
 		plt.ylabel('y')
-		#plt.show()
-		plt.savefig('%s_spot.png' %(self._r))
+		fig2.show()
+		fig2.savefig('r_%s_and_n_%s_spot.png' %(self._r, self._n))
 
 	def rms(self, outputplane):
 		"""Calculates the rms spot deviation (geometrical focus)"""
